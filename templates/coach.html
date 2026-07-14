@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Grok Coach · DreamWeaver N1{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Grok Dream Coach</h1>
+  {% if not coach_ready %}
+    <p class="notice">Grok Coach is offline. Set <code>GROK_API_KEY</code> to enable streaming advice.</p>
+  {% endif %}
+  <form id="coach-form" class="form">
+    <label>Current intention (optional)
+      <input name="intention" placeholder="Become lucid during a recurring dream">
+    </label>
+    <label>Ask the coach
+      <textarea name="question" rows="3" required placeholder="How do I improve my dream recall?"></textarea>
+    </label>
+    <button class="btn" type="submit" {% if not coach_ready %}disabled{% endif %}>Ask</button>
+  </form>
+  <div class="coach-response" id="coach-response" aria-live="polite"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='coach.js') }}"></script>
+{% endblock %}

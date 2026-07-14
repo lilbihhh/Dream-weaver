@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}TMR Session {{ session.id }}{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>TMR Session #{{ session.id }}</h1>
+  <p><strong>Dream:</strong> <a href="{{ url_for('play', dream_id=dream.id) }}">{{ dream.title }}</a></p>
+  <p><strong>Status:</strong> <span class="badge badge-{{ session.status }}">{{ session.status }}</span></p>
+  <p><strong>Cues delivered:</strong> <span class="cue-count">{{ session.cue_count }}</span></p>
+  <p class="muted">Started {{ session.started_at }}{% if session.completed_at %} · completed {{ session.completed_at }}{% endif %}</p>
+  {% if session.status == 'active' %}
+    <div class="cta-row">
+      <form method="post" action="{{ url_for('tmr_cue', session_id=session.id) }}">
+        <button class="btn" type="submit">Deliver Cue</button>
+      </form>
+      <form method="post" action="{{ url_for('tmr_complete', session_id=session.id) }}">
+        <button class="btn btn-ghost" type="submit">Complete Session</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="notice">This session is complete.</p>
+  {% endif %}
+</section>
+{% endblock %}

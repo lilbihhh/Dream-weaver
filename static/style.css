@@ -1,0 +1,95 @@
+:root {
+  --bg: #0d1024;
+  --panel: #171a34;
+  --accent: #7c5cff;
+  --accent-2: #21c7c7;
+  --text: #e8e9f3;
+  --muted: #9aa0c4;
+  --ok: #21c77a;
+  --warn: #f5a623;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+a { color: var(--accent-2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.site-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9rem 1.5rem;
+  background: rgba(23, 26, 52, 0.9);
+  border-bottom: 1px solid rgba(124, 92, 255, 0.35);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+.site-header nav a { margin-left: 1rem; color: var(--muted); }
+.site-header nav a:hover { color: var(--text); }
+.container { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+.hero { text-align: center; padding: 2rem 1rem; }
+.hero h1 { font-size: 2.1rem; margin: 0 0 0.5rem; }
+.panel {
+  background: var(--panel);
+  border: 1px solid rgba(124, 92, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin: 1rem 0; }
+.btn {
+  display: inline-block; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; border: none; border-radius: 8px;
+  padding: 0.6rem 1.1rem; font-size: 0.95rem; font-weight: 600;
+}
+.btn:hover { filter: brightness(1.1); text-decoration: none; }
+.btn-ghost { background: transparent; border: 1px solid var(--accent); color: var(--text); }
+.form { display: flex; flex-direction: column; gap: 0.9rem; max-width: 560px; }
+.form-inline { flex-direction: row; align-items: flex-end; flex-wrap: wrap; }
+.form label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; }
+.form input, .form textarea, .form select {
+  background: #0f1230; color: var(--text);
+  border: 1px solid rgba(124, 92, 255, 0.4);
+  border-radius: 6px; padding: 0.55rem; font: inherit;
+}
+.card-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.card { background: #0f1230; border-radius: 8px; padding: 0.9rem 1rem; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.notice { color: var(--warn); }
+.grid { width: 100%; border-collapse: collapse; }
+.grid th, .grid td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(124,92,255,0.15); }
+.badge { border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem; }
+.badge-active { background: rgba(245,166,35,0.2); color: var(--warn); }
+.badge-completed { background: rgba(33,199,122,0.2); color: var(--ok); }
+.flash { list-style: none; padding: 0; }
+.flash li { padding: 0.6rem 0.9rem; border-radius: 8px; margin-bottom: 0.5rem; }
+.flash-success { background: rgba(33,199,122,0.15); color: var(--ok); }
+.site-footer { text-align: center; color: var(--muted); padding: 1.5rem; font-size: 0.85rem; }
+.error-panel { text-align: center; }
+.coach-response { white-space: pre-wrap; margin-top: 1rem; padding: 1rem; background: #0f1230; border-radius: 8px; min-height: 3rem; }
+
+/* Animated dreamscape playback */
+.dreamscape {
+  position: relative; height: 320px; border-radius: 12px; overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #2a1e6b, #0d1024 70%);
+  margin: 1rem 0;
+}
+.dreamscape.paused .scene-layer { animation-play-state: paused; }
+.scene-layer { position: absolute; inset: -20%; opacity: 0.55; mix-blend-mode: screen; }
+.layer-a { background: radial-gradient(circle at 20% 30%, #7c5cff, transparent 45%); animation: drift-a 14s ease-in-out infinite; }
+.layer-b { background: radial-gradient(circle at 80% 60%, #21c7c7, transparent 40%); animation: drift-b 18s ease-in-out infinite; }
+.layer-c { background: radial-gradient(circle at 50% 80%, #ff6ec7, transparent 45%); animation: drift-c 22s ease-in-out infinite; }
+.scene-caption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 1rem 1.25rem; font-size: 1.05rem;
+  background: linear-gradient(transparent, rgba(13,16,36,0.85));
+}
+@keyframes drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(12%, 8%) scale(1.2); } }
+@keyframes drift-b { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(-14%, -6%) scale(1); } }
+@keyframes drift-c { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(8%, -12%) scale(1.25); } }
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer { animation: none; }
+}
