@@ -9,7 +9,7 @@
     <a class="btn btn-ghost" href="{{ url_for('tmr') }}">Start TMR</a>
   </div>
   {% if not coach_ready %}
-    <p class="notice">Grok Coach is offline — set <code>GROK_API_KEY</code> to enable streaming advice.</p>
+    <p class="notice">Grok Coach is offline — set <code>GROK_API_KEY</code> or <code>XAI_API_KEY</code> to enable streaming advice.</p>
   {% endif %}
 </section>
 
@@ -33,6 +33,12 @@
 <section class="panel">
   <h2>Recent TMR Sessions</h2>
   {% if sessions %}
+    <div class="session-highlights" aria-label="Recent TMR highlights">
+      <div class="highlight"><span>Recent</span><strong>{{ session_summary.total }}</strong></div>
+      <div class="highlight"><span>Active</span><strong>{{ session_summary.active }}</strong></div>
+      <div class="highlight"><span>Completed</span><strong>{{ session_summary.completed }}</strong></div>
+      <div class="highlight"><span>Cues</span><strong>{{ session_summary.cues }}</strong></div>
+    </div>
     <table class="grid">
       <thead><tr><th>#</th><th>Dream</th><th>Status</th><th>Cues</th><th>Started</th></tr></thead>
       <tbody>

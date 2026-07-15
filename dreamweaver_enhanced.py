@@ -15,12 +15,15 @@ import sqlite3
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Iterable, Iterator, Optional
+from urllib.parse import urlparse
 
 import requests
 
 DEFAULT_DB_PATH = os.environ.get("DREAMWEAVER_DB", "dreams.db")
 GROK_API_URL = os.environ.get("GROK_API_URL", "https://api.x.ai/v1/chat/completions")
 GROK_MODEL = os.environ.get("GROK_MODEL", "grok-4.5")
+VIDEO_EXTENSIONS = (".mp4", ".webm", ".ogv", ".ogg")
+IMAGE_EXTENSIONS = (".gif", ".webp", ".png", ".jpg", ".jpeg")
 
 
 def utcnow_iso() -> str:
@@ -53,10 +56,20 @@ class Dream:
     title: str
     intention: str
     scene: str
+    media_url: str = ""
     created_at: str = field(default_factory=utcnow_iso)
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+    @property
+    def media_kind(self) -> str:
+        path = urlparse(self.media_url).path.lower()
+        if path.endswith(VIDEO_EXTENSIONS):
+            return "video"
+        if path.endswith(IMAGE_EXTENSIONS):
+            return "image"
+        return ""
 
 
 @dataclass
@@ -97,7 +110,8 @@ class DreamStore:
                 created_at TEXT NOT NULL,
                 title TEXT NOT NULL,
                 intention TEXT NOT NULL,
-                scene TEXT NOT NULL DEFAULT ''
+                scene TEXT NOT NULL DEFAULT '',
+                media_url TEXT NOT NULL DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS tmr_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,6 +123,13 @@ class DreamStore:
             );
             """
         )
+        columns = {
+            row["name"] for row in self.conn.execute("PRAGMA table_info(dreams)")
+        }
+        if "media_url" not in columns:
+            self.conn.execute(
+                "ALTER TABLE dreams ADD COLUMN media_url TEXT NOT NULL DEFAULT ''"
+            )
         self.conn.commit()
 
     def close(self) -> None:
@@ -116,18 +137,25 @@ class DreamStore:
 
     # -- dreams -----------------------------------------------------------
 
-    def add_dream(self, title: str, intention: str, scene: str = "") -> Dream:
+    def add_dream(
+        self,
+        title: str,
+        intention: str,
+        scene: str = "",
+        media_url: str = "",
+    ) -> Dream:
         title = (title or "").strip()
         intention = (intention or "").strip()
         if not title:
             raise ValidationError("Dream title is required.")
         if not intention:
             raise ValidationError("Dream intention is required.")
+        media_url = normalize_media_url(media_url)
         created_at = utcnow_iso()
         cur = self.conn.execute(
-            "INSERT INTO dreams (created_at, title, intention, scene) "
-            "VALUES (?, ?, ?, ?)",
-            (created_at, title, intention, scene or ""),
+            "INSERT INTO dreams (created_at, title, intention, scene, media_url) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (created_at, title, intention, scene or "", media_url),
         )
         self.conn.commit()
         return Dream(
@@ -135,6 +163,7 @@ class DreamStore:
             title=title,
             intention=intention,
             scene=scene or "",
+            media_url=media_url,
             created_at=created_at,
         )
 
@@ -159,6 +188,7 @@ class DreamStore:
             title=row["title"],
             intention=row["intention"],
             scene=row["scene"],
+            media_url=row["media_url"],
             created_at=row["created_at"],
         )
 
@@ -231,6 +261,21 @@ class DreamStore:
         )
 
 
+def normalize_media_url(media_url: str) -> str:
+    media_url = (media_url or "").strip()
+    if not media_url:
+        return ""
+    parsed = urlparse(media_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValidationError("Media URL must be a public HTTP or HTTPS URL.")
+    path = parsed.path.lower()
+    if not path.endswith(VIDEO_EXTENSIONS + IMAGE_EXTENSIONS):
+        raise ValidationError(
+            "Media URL must point to an MP4, WebM, Ogg, GIF, WebP, PNG, or JPEG file."
+        )
+    return media_url
+
+
 def build_coach_prompt(question: str, intention: Optional[str] = None) -> "list[dict]":
     """Construct a chat-completion message list for the Grok dream coach.
 
@@ -242,10 +287,13 @@ def build_coach_prompt(question: str, intention: Optional[str] = None) -> "list[
     if not question:
         raise ValidationError("A question is required to consult the coach.")
     system = (
-        "You are DreamWeaver's lucid dreaming coach. Give concise, practical, "
-        "evidence-informed guidance on lucid dreaming, dream recall, reality "
-        "checks and Targeted Memory Reactivation. Be encouraging and never give "
-        "medical advice."
+        "You are DreamWeaver's evidence-aware lucid dreaming and TMR coach. "
+        "Respond with three short sections: Tonight's plan, Dream cue, and "
+        "Morning recall. Give concrete, personalized steps for dream recall, "
+        "reality checks, MILD, and Targeted Memory Reactivation when relevant. "
+        "Separate established sleep guidance from experimental ideas, never "
+        "promise lucidity, avoid advice that disrupts healthy sleep, and never "
+        "give medical advice."
     )
     messages = [{"role": "system", "content": system}]
     if intention and intention.strip():
@@ -269,9 +317,11 @@ class GrokCoach:
         model: str = GROK_MODEL,
         session: Optional[requests.Session] = None,
     ) -> None:
-        self.api_key = (
-            api_key if api_key is not None else os.environ.get("GROK_API_KEY", "")
-        )
+        if api_key is None:
+            api_key = os.environ.get("GROK_API_KEY", "")
+            if not api_key or api_key == "YOUR_XAI_API_KEY_HERE":
+                api_key = os.environ.get("XAI_API_KEY", "")
+        self.api_key = api_key
         self.api_url = api_url
         self.model = model
         self.session = session or requests.Session()

@@ -58,10 +58,17 @@ def create_app(
         store = get_store()
         dreams = store.list_dreams(limit=10)
         sessions = store.list_tmr_sessions(limit=10)
+        session_summary = {
+            "total": len(sessions),
+            "active": sum(session.status == "active" for session in sessions),
+            "completed": sum(session.status == "completed" for session in sessions),
+            "cues": sum(session.cue_count for session in sessions),
+        }
         return render_template(
             "dashboard.html",
             dreams=dreams,
             sessions=sessions,
+            session_summary=session_summary,
             coach_ready=get_coach().is_configured,
         )
 
@@ -73,6 +80,7 @@ def create_app(
                 title=request.form.get("title", ""),
                 intention=request.form.get("intention", ""),
                 scene=request.form.get("scene", ""),
+                media_url=request.form.get("media_url", ""),
             )
             flash(f"Dream '{dream.title}' recorded.", "success")
             return redirect(url_for("play", dream_id=dream.id))
@@ -131,7 +139,8 @@ def create_app(
         intention = request.form.get("intention", "")
         if not coach.is_configured:
             return Response(
-                "The Grok coach is not configured. Set GROK_API_KEY to enable it.",
+                "The Grok coach is not configured. Set GROK_API_KEY or "
+                "XAI_API_KEY to enable it.",
                 status=503,
                 mimetype="text/plain",
             )
@@ -144,7 +153,11 @@ def create_app(
             except DreamWeaverError as exc:
                 yield f"\n[error] {exc}"
 
-        return Response(generate(), mimetype="text/plain")
+        return Response(
+            generate(),
+            mimetype="text/plain",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @app.route("/healthz")
     def healthz():

@@ -10,7 +10,7 @@ DreamWeaver N1 is a Flask application for recording dream intentions, replaying 
 
 - Persistent SQLite storage for multiple dreams and TMR sessions
 - Dashboard with recent dreams and TMR activity
-- Dream recording and animated, video-style scene playback
+- Dream recording with CSS dreamscapes plus optional HTML5 video or GIF playback
 - TMR start, cue logging, and completion workflow
 - Streaming Grok Coach responses with lucid-dreaming-specific prompting
 - Friendly validation, not-found, API configuration, and health-check responses
@@ -40,7 +40,8 @@ Open `http://127.0.0.1:5000`.
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `GROK_API_KEY` | For Coach | — | xAI API key; never commit it |
+| `GROK_API_KEY` | For Coach | — | Preferred xAI API key variable; never commit it |
+| `XAI_API_KEY` | For Coach | — | Supported alias when `GROK_API_KEY` is unset |
 | `GROK_API_URL` | No | `https://api.x.ai/v1/chat/completions` | Grok chat-completions endpoint |
 | `GROK_MODEL` | No | `grok-4.5` | xAI model used by the coach |
 | `DREAMWEAVER_DB` | No | `dreams.db` | SQLite database path |

@@ -55,6 +55,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid rgba(124, 92, 255, 0.4);
   border-radius: 6px; padding: 0.55rem; font: inherit;
 }
+.field-help { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
 .card-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
 .card { background: #0f1230; border-radius: 8px; padding: 0.9rem 1rem; }
 .muted { color: var(--muted); font-size: 0.9rem; }
@@ -64,20 +65,60 @@ a:hover { text-decoration: underline; }
 .badge { border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem; }
 .badge-active { background: rgba(245,166,35,0.2); color: var(--warn); }
 .badge-completed { background: rgba(33,199,122,0.2); color: var(--ok); }
+.session-highlights {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0 1.25rem;
+}
+.highlight {
+  padding: 0.85rem;
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(124,92,255,0.14), rgba(33,199,199,0.06));
+}
+.highlight span { display: block; color: var(--muted); font-size: 0.8rem; }
+.highlight strong { display: block; font-size: 1.5rem; margin-top: 0.15rem; }
 .flash { list-style: none; padding: 0; }
 .flash li { padding: 0.6rem 0.9rem; border-radius: 8px; margin-bottom: 0.5rem; }
 .flash-success { background: rgba(33,199,122,0.15); color: var(--ok); }
 .site-footer { text-align: center; color: var(--muted); padding: 1.5rem; font-size: 0.85rem; }
 .error-panel { text-align: center; }
 .coach-response { white-space: pre-wrap; margin-top: 1rem; padding: 1rem; background: #0f1230; border-radius: 8px; min-height: 3rem; }
+.coach-response.streaming { border: 1px solid rgba(33,199,199,0.35); }
 
 /* Animated dreamscape playback */
-.dreamscape {
-  position: relative; height: 320px; border-radius: 12px; overflow: hidden;
-  background: radial-gradient(circle at 30% 20%, #2a1e6b, #0d1024 70%);
+.playback-frame {
+  position: relative;
+  height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
   margin: 1rem 0;
+  background: #080a1a;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+}
+.dreamscape {
+  position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #2a1e6b, #0d1024 70%);
+  transition: background 1.4s ease;
+  z-index: 1;
 }
 .dreamscape.paused .scene-layer { animation-play-state: paused; }
+.dream-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.05);
+  transition: opacity 1.4s ease, transform 8s ease;
+  animation: media-breathe 18s ease-in-out infinite;
+  z-index: 0;
+}
+.playback-frame.media-ready .dream-media { opacity: 0.8; transform: scale(1); }
+.playback-frame.media-ready .dreamscape { background: rgba(13, 16, 36, 0.18); }
+.playback-frame.paused .dream-media { animation-play-state: paused; }
 .scene-layer { position: absolute; inset: -20%; opacity: 0.55; mix-blend-mode: screen; }
 .layer-a { background: radial-gradient(circle at 20% 30%, #7c5cff, transparent 45%); animation: drift-a 14s ease-in-out infinite; }
 .layer-b { background: radial-gradient(circle at 80% 60%, #21c7c7, transparent 40%); animation: drift-b 18s ease-in-out infinite; }
@@ -86,10 +127,19 @@ a:hover { text-decoration: underline; }
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 1rem 1.25rem; font-size: 1.05rem;
   background: linear-gradient(transparent, rgba(13,16,36,0.85));
+  z-index: 2;
 }
+@keyframes media-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
 @keyframes drift-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(12%, 8%) scale(1.2); } }
 @keyframes drift-b { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(-14%, -6%) scale(1); } }
 @keyframes drift-c { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(8%, -12%) scale(1.25); } }
 @media (prefers-reduced-motion: reduce) {
-  .scene-layer { animation: none; }
+  .scene-layer, .dream-media { animation: none; transition: none; }
+}
+@media (max-width: 640px) {
+  .site-header { align-items: flex-start; gap: 0.75rem; }
+  .site-header nav { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+  .session-highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid { display: block; overflow-x: auto; }
+  .playback-frame { height: 260px; }
 }

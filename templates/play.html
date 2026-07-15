@@ -4,11 +4,20 @@
 <section class="panel">
   <h1>{{ dream.title }}</h1>
   <p class="muted">Recorded {{ dream.created_at }}</p>
-  <div class="dreamscape" id="dreamscape" aria-label="Animated dream playback">
-    <div class="scene-layer layer-a"></div>
-    <div class="scene-layer layer-b"></div>
-    <div class="scene-layer layer-c"></div>
-    <div class="scene-caption" id="scene-caption">{{ dream.scene or dream.intention }}</div>
+  <div class="playback-frame" id="playback-frame">
+    {% if dream.media_kind == "video" %}
+      <video class="dream-media" id="dream-media" autoplay muted loop playsinline preload="metadata">
+        <source src="{{ dream.media_url }}">
+      </video>
+    {% elif dream.media_kind == "image" %}
+      <img class="dream-media" id="dream-media" src="{{ dream.media_url }}" alt="">
+    {% endif %}
+    <div class="dreamscape" id="dreamscape" aria-label="Animated dream playback">
+      <div class="scene-layer layer-a"></div>
+      <div class="scene-layer layer-b"></div>
+      <div class="scene-layer layer-c"></div>
+      <div class="scene-caption" id="scene-caption">{{ dream.scene or dream.intention }}</div>
+    </div>
   </div>
   <div class="cta-row">
     <button class="btn" id="play-btn" type="button">Play</button>

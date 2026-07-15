@@ -1,4 +1,5 @@
 import json
+import sqlite3
 
 import pytest
 import requests
@@ -25,12 +26,19 @@ def test_utcnow_iso_is_seconds_precision():
 
 
 def test_add_and_get_dream_roundtrip(store):
-    dream = store.add_dream("Flying", "Recognise the dream", scene="A bright coast")
+    dream = store.add_dream(
+        "Flying",
+        "Recognise the dream",
+        scene="A bright coast",
+        media_url="https://cdn.example/dream.mp4",
+    )
     assert dream.id is not None
     fetched = store.get_dream(dream.id)
     assert fetched.title == "Flying"
     assert fetched.intention == "Recognise the dream"
     assert fetched.scene == "A bright coast"
+    assert fetched.media_url == "https://cdn.example/dream.mp4"
+    assert fetched.media_kind == "video"
     assert fetched.to_dict()["title"] == "Flying"
 
 
@@ -39,6 +47,34 @@ def test_add_dream_trims_whitespace(store):
     assert dream.title == "Ocean"
     assert dream.intention == "swim"
     assert dream.scene == ""
+    assert dream.media_url == ""
+    assert dream.media_kind == ""
+
+
+@pytest.mark.parametrize(
+    "media_url,kind",
+    [
+        ("https://cdn.example/scene.gif?version=2", "image"),
+        ("https://cdn.example/scene.webp", "image"),
+        ("https://cdn.example/scene.webm", "video"),
+    ],
+)
+def test_dream_media_kind(store, media_url, kind):
+    dream = store.add_dream("Media", "See it", media_url=media_url)
+    assert dream.media_kind == kind
+
+
+@pytest.mark.parametrize(
+    "media_url",
+    [
+        "javascript:alert(1)",
+        "/static/scene.mp4",
+        "https://cdn.example/scene.txt",
+    ],
+)
+def test_add_dream_rejects_unsafe_or_unsupported_media(store, media_url):
+    with pytest.raises(ValidationError):
+        store.add_dream("Media", "See it", media_url=media_url)
 
 
 @pytest.mark.parametrize(
@@ -127,6 +163,24 @@ def test_persistence_across_store_instances(tmp_path):
     store_b.close()
 
 
+def test_existing_database_is_migrated_with_media_column(tmp_path):
+    path = str(tmp_path / "legacy.db")
+    conn = sqlite3.connect(path)
+    conn.execute(
+        "CREATE TABLE dreams ("
+        "id INTEGER PRIMARY KEY, created_at TEXT NOT NULL, title TEXT NOT NULL, "
+        "intention TEXT NOT NULL, scene TEXT NOT NULL DEFAULT '')"
+    )
+    conn.commit()
+    conn.close()
+
+    store = dw.DreamStore(db_path=path)
+    columns = {row["name"] for row in store.conn.execute("PRAGMA table_info(dreams)")}
+    assert "media_url" in columns
+    assert store.add_dream("Migrated", "Remember").media_url == ""
+    store.close()
+
+
 # -- Prompt building ------------------------------------------------------
 
 
@@ -134,6 +188,8 @@ def test_build_coach_prompt_without_intention():
     messages = build_coach_prompt("How do I recall dreams?")
     assert messages[0]["role"] == "system"
     assert messages[-1] == {"role": "user", "content": "How do I recall dreams?"}
+    assert "Tonight's plan" in messages[0]["content"]
+    assert "never promise lucidity" in messages[0]["content"]
     assert len(messages) == 2
 
 
@@ -214,6 +270,12 @@ def test_is_configured_rejects_placeholder_and_empty():
     assert GrokCoach(api_key="").is_configured is False
     assert GrokCoach(api_key="YOUR_XAI_API_KEY_HERE").is_configured is False
     assert GrokCoach(api_key="real-key").is_configured is True
+
+
+def test_xai_api_key_is_supported_as_environment_alias(monkeypatch):
+    monkeypatch.setenv("GROK_API_KEY", "YOUR_XAI_API_KEY_HERE")
+    monkeypatch.setenv("XAI_API_KEY", "alias-key")
+    assert GrokCoach().api_key == "alias-key"
 
 
 def test_ask_returns_message_content():

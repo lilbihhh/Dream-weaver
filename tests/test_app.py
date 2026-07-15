@@ -29,9 +29,17 @@ def test_dashboard_empty(client):
 
 def test_dashboard_lists_dreams_and_sessions(client):
     dream = _seed_dream(client)
-    client.store.start_tmr_session(dream.id)
+    active = client.store.start_tmr_session(dream.id)
+    completed = client.store.start_tmr_session(dream.id)
+    client.store.record_cue(completed.id)
+    client.store.complete_tmr_session(completed.id)
     resp = client.get("/")
     assert b"Flying" in resp.data
+    assert b"<span>Recent</span><strong>2</strong>" in resp.data
+    assert b"<span>Active</span><strong>1</strong>" in resp.data
+    assert b"<span>Completed</span><strong>1</strong>" in resp.data
+    assert b"<span>Cues</span><strong>1</strong>" in resp.data
+    assert client.store.get_tmr_session(active.id).status == "active"
 
 
 def test_record_get_renders_form(client):
@@ -43,12 +51,19 @@ def test_record_get_renders_form(client):
 def test_record_post_creates_and_redirects_to_play(client):
     resp = client.post(
         "/record",
-        data={"title": "Ocean", "intention": "Swim deep", "scene": "Blue water"},
+        data={
+            "title": "Ocean",
+            "intention": "Swim deep",
+            "scene": "Blue water",
+            "media_url": "https://cdn.example/ocean.mp4",
+        },
         follow_redirects=True,
     )
     assert resp.status_code == 200
     assert b"Ocean" in resp.data
     assert b"Blue water" in resp.data
+    assert b"<video" in resp.data
+    assert b"https://cdn.example/ocean.mp4" in resp.data
     assert len(client.store.list_dreams()) == 1
 
 
@@ -58,12 +73,37 @@ def test_record_post_validation_error(client):
     assert b"required" in resp.data
 
 
+def test_record_post_rejects_unsupported_media_url(client):
+    resp = client.post(
+        "/record",
+        data={
+            "title": "Ocean",
+            "intention": "Swim deep",
+            "media_url": "https://cdn.example/ocean.txt",
+        },
+    )
+    assert resp.status_code == 400
+    assert b"Media URL must point to" in resp.data
+
+
 def test_play_renders_animated_scene(client):
     dream = _seed_dream(client)
     resp = client.get(f"/play/{dream.id}")
     assert resp.status_code == 200
     assert b"dreamscape" in resp.data
     assert b"A bright coast" in resp.data
+
+
+def test_play_renders_gif_media(client):
+    dream = client.store.add_dream(
+        "Aurora",
+        "Notice the moon",
+        scene="Violet sky",
+        media_url="https://cdn.example/aurora.gif",
+    )
+    resp = client.get(f"/play/{dream.id}")
+    assert b'<img class="dream-media"' in resp.data
+    assert b"https://cdn.example/aurora.gif" in resp.data
 
 
 def test_play_missing_dream_returns_404(client):
@@ -118,6 +158,8 @@ def test_coach_ask_streams_tokens(client):
     resp = client.post("/coach/ask", data={"question": "How?", "intention": "fly"})
     assert resp.status_code == 200
     assert resp.data == b"Hello dreamer"
+    assert resp.headers["Cache-Control"] == "no-cache"
+    assert resp.headers["X-Accel-Buffering"] == "no"
 
 
 def test_coach_ask_reports_stream_error(tmp_path):
