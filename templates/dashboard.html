@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · DreamWeaver N1{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Welcome, Architect.</h1>
+  <p>Record intentions, replay dreamscapes, and reinforce them with Targeted Memory Reactivation.</p>
+  <div class="cta-row">
+    <a class="btn" href="{{ url_for('record') }}">Record a Dream</a>
+    <a class="btn btn-ghost" href="{{ url_for('tmr') }}">Start TMR</a>
+  </div>
+  {% if not coach_ready %}
+    <p class="notice">Grok Coach is offline — set <code>GROK_API_KEY</code> or <code>XAI_API_KEY</code> to enable streaming advice.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Recent Dreams</h2>
+  {% if dreams %}
+    <ul class="card-list">
+      {% for dream in dreams %}
+        <li class="card">
+          <a href="{{ url_for('play', dream_id=dream.id) }}"><strong>{{ dream.title }}</strong></a>
+          <p class="muted">{{ dream.created_at }}</p>
+          <p>{{ dream.intention }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No dreams yet. <a href="{{ url_for('record') }}">Record your first one.</a></p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Recent TMR Sessions</h2>
+  {% if sessions %}
+    <div class="session-highlights" aria-label="Recent TMR highlights">
+      <div class="highlight"><span>Recent</span><strong>{{ session_summary.total }}</strong></div>
+      <div class="highlight"><span>Active</span><strong>{{ session_summary.active }}</strong></div>
+      <div class="highlight"><span>Completed</span><strong>{{ session_summary.completed }}</strong></div>
+      <div class="highlight"><span>Cues</span><strong>{{ session_summary.cues }}</strong></div>
+    </div>
+    <table class="grid">
+      <thead><tr><th>#</th><th>Dream</th><th>Status</th><th>Cues</th><th>Started</th></tr></thead>
+      <tbody>
+        {% for s in sessions %}
+          <tr>
+            <td><a href="{{ url_for('tmr_session', session_id=s.id) }}">{{ s.id }}</a></td>
+            <td>{{ s.dream_id }}</td>
+            <td><span class="badge badge-{{ s.status }}">{{ s.status }}</span></td>
+            <td>{{ s.cue_count }}</td>
+            <td class="muted">{{ s.started_at }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No TMR sessions recorded yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
