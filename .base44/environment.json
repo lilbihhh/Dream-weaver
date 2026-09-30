@@ -1,0 +1,13 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/healthz",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "GROK_API_KEY",
+      "description": "xAI (Grok) API key for the Coach feature. Get it from the xAI console at console.x.ai. Optional — the app runs without it; the Coach page shows 'not configured' until provided.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": false
+    }
+  ]
+}
