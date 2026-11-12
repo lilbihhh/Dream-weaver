@@ -30,10 +30,13 @@ from dreamweaver_enhanced import (
     NotFoundError,
     ValidationError,
 )
+from intentionality_blueprint import default_ledger_path, simulation_bp
 
 
 def create_app(
-    store: "DreamStore | None" = None, coach: "GrokCoach | None" = None
+    store: "DreamStore | None" = None,
+    coach: "GrokCoach | None" = None,
+    nexus_ledger: "str | None" = None,
 ) -> Flask:
     """Application factory.
 
@@ -46,6 +49,8 @@ def create_app(
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
     app.config["STORE"] = store or DreamStore()
     app.config["COACH"] = coach or GrokCoach()
+    app.config["NEXUS_LEDGER"] = str(nexus_ledger or default_ledger_path())
+    app.register_blueprint(simulation_bp)
 
     def get_store() -> DreamStore:
         return app.config["STORE"]

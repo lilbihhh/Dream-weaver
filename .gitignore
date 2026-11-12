@@ -8,3 +8,4 @@ venv/
 .coverage.*
 htmlcov/
 .pytest_cache/
+nexus_ledger.jsonl

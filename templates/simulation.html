@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Simulation · DreamWeaver N1{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Intentionality Engine — Simulation</h1>
+  <p class="muted">
+    Run one offline policy pass over synthetic inputs:
+    Observe → Estimate → Propose → <strong>SafetyGovernor</strong> → SelectRegime → EmitAudit.
+    The Safety Governor is the first gate and the final veto.
+  </p>
+  <p class="notice">
+    Non-medical, non-actuating research simulation. No neural input, stimulation parameter,
+    device driver or actuator command is produced, and no envelope is ever emitted. Not a
+    medical device, treatment, clinical protocol or validated BCI; every proposal is advisory.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Synthetic inputs</h2>
+  <form method="post" action="{{ url_for('simulation.simulation') }}">
+    <div class="field-grid">
+      <label>Consent
+        <select name="consent_state" required>
+          {% for state in consent_states %}
+            <option value="{{ state }}" {% if (form.consent_state if form else 'granted') == state %}selected{% endif %}>{{ state }}</option>
+          {% endfor %}
+        </select>
+        <span class="field-help">Explicit consent is a hard constraint.</span>
+      </label>
+      <label>Context
+        <select name="context" required>
+          {% for ctx in contexts %}
+            <option value="{{ ctx }}" {% if (form.context if form else 'CoreLayer') == ctx %}selected{% endif %}>{{ ctx }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Coherence C(S) <input name="coherence" type="number" min="0" max="1" step="0.01" required value="{{ form.coherence if form else 0.82 }}"></label>
+      <label>Broadcast density I <input name="broadcast" type="number" min="0" max="1" step="0.01" required value="{{ form.broadcast if form else 0.25 }}"></label>
+      <label>Arousal <input name="arousal" type="number" min="0" max="1" step="0.01" required value="{{ form.arousal if form else 0.30 }}"></label>
+      <label>Arousal ceiling <input name="arousal_max" type="number" min="0" max="1" step="0.01" required value="{{ form.arousal_max if form else 0.80 }}"></label>
+    </div>
+
+    <fieldset class="checks">
+      <legend>Safety inputs</legend>
+      <label><input type="checkbox" name="input_valid" {% if form is none or form.input_valid %}checked{% endif %}> Input valid</label>
+      <label><input type="checkbox" name="input_fresh" {% if form is none or form.input_fresh %}checked{% endif %}> Input fresh</label>
+      <label><input type="checkbox" name="liberty_ok" {% if form is none or form.liberty_ok %}checked{% endif %}> Cognitive liberty intact</label>
+      <label><input type="checkbox" name="stop_requested" {% if form and form.stop_requested %}checked{% endif %}> Stop requested</label>
+    </fieldset>
+
+    <button class="btn" type="submit">Run Policy Pass</button>
+  </form>
+</section>
+
+{% if result %}
+<section class="panel">
+  <h2>Decision</h2>
+  <div class="decision">
+    <div class="highlight">
+      <span>Safety decision</span>
+      <strong><span class="badge badge-{{ 'allow' if result.safety_decision == 'ALLOW' else 'veto' }}">{{ result.safety_decision }}</span></strong>
+    </div>
+    <div class="highlight"><span>Selected regime</span><strong>{{ result.regime }}</strong></div>
+    <div class="highlight"><span>Reason code</span><strong class="reason">{{ result.reason_code }}</strong></div>
+  </div>
+  <table class="grid">
+    <tbody>
+      <tr><th>Adaptive proposal</th><td>{{ result.adaptive_proposal or '—' }}</td></tr>
+      <tr><th>Envelope</th><td>{{ 'none (envelope_id null)' if result.envelope_id is none else result.envelope_id }}</td></tr>
+      <tr><th>Event ID</th><td class="mono">{{ result.event.event_id }}</td></tr>
+      <tr><th>Inputs hash</th><td class="mono">{{ result.event.inputs_hash }}</td></tr>
+      <tr><th>Recorded at</th><td>{{ result.event.ts }}</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">Appended to the NEXUS ledger after strict schema validation.</p>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Recent NEXUS events</h2>
+  {% if events %}
+    <table class="grid">
+      <thead><tr><th>Time (UTC)</th><th>Decision</th><th>Regime</th><th>Reason</th><th>Event</th></tr></thead>
+      <tbody>
+        {% for event in events %}
+          <tr>
+            <td>{{ event.ts }}</td>
+            <td><span class="badge badge-{{ 'allow' if event.safety_decision == 'ALLOW' else 'veto' }}">{{ event.safety_decision }}</span></td>
+            <td>{{ event.regime }}</td>
+            <td class="mono">{{ event.notes }}</td>
+            <td class="mono">{{ event.event_id[:8] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No events yet — run a pass to append the first NEXUS event.</p>
+  {% endif %}
+  <p class="field-help">Ledger: {{ ledger_path }}</p>
+</section>
+{% endblock %}

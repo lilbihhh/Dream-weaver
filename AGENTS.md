@@ -20,6 +20,25 @@ streaming "Coach" feature.
 - `SECRET_KEY`: defaults to `dev-secret-key` in code; override via secrets for
   production.
 
+## Simulation section (Intentionality Engine)
+- `intentionality_blueprint.py` registers `/simulation` (form + ALLOW/VETO
+  result + recent-events table). `app.create_app(nexus_ledger=...)` overrides
+  the ledger path for tests.
+- `intentional_engine/` is a vendored copy of
+  `lilbihhh/intentional-architecture` @ `8035e2befd93d2f10947e708fc4a021cb1393c5a`
+  (see `intentional_engine/VENDORED.md`). Do not edit policy/metric/regime logic
+  locally; re-vendor instead.
+- `jsonschema` is required for strict NEXUS audit validation — it is pinned in
+  `requirements.txt`.
+- Ledger: `DREAMWEAVER_NEXUS_LEDGER`, defaulting to `/data/nexus_ledger.jsonl`
+  (persistent volume) — append-only JSONL, hash-chained, one schema-validated
+  event per pass. Verify with
+  `python -m intentional_engine.verify_audit <ledger>`.
+- The section is non-actuating: no envelope, no stimulation parameters, no
+  device commands; `envelope_id` is always null.
+- Form POST redirects back to `/simulation`; the decision shows once from the
+  Flask session, while the ledger table persists across reloads.
+
 ## Dev server notes
 - Flask debug server auto-reloads on source changes — no manual restart needed
   for template/Python edits.
